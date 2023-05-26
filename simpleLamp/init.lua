@@ -24,29 +24,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ]]--
 
-
---[[
-ADD THE ABILITY TO DO MULTIPLE LAMPS EASIER/QUICKER.
-return an overlamp object, return id.
-the overlamp will have the lightmap, not the invididual lights.
-As well as daylight level, and amibient color
-
-how the overlamp will work-
-list of lamps. For each object/tile/etc queried, it will grab the higher of the two values.
-]]
-
-
 local dir=...
 vector=require(dir .. ".vector-light")
 
-function createLamp(x, y, lumens, sx, sy)
+function createLamp(x, y, lumens)
 
 	return
 	{
 		x=x,
 		y=y,
 		lumens=(100-lumens),
-		screen={x=sx, y=sy},
 		lumonisity=function(self, x, y)
 			if(self.lumens==1) then return 100 end
 			local dist=((vector.dist(x, y, self.x, self.y))-(180-self.lumens))	
@@ -55,17 +42,10 @@ function createLamp(x, y, lumens, sx, sy)
 			if(lumens>99) then lumens=100 end
 			return lumens
 		end,
-		--add the ability to set a default lighting level, for daylight/etc.
-		draw=function(self)
-			for x=0, self.screen.x/4 do
-				for y=0, self.screen.y/4 do
-					love.graphics.setColor(0, 0, 0, 1)
-					local lit=self:lumonisity(x*4, y*4)
-					love.graphics.setColor(0, 0, 0, 1-(lit/100))
-					love.graphics.rectangle("fill",  (x*4), (y*4), 4, 4)
-				end
-			end
-			love.graphics.setColor(1, 1, 1, 1)
+		setBrightness=function(self, amount)
+			self.lumens=self.lumens+amount
+			if(self.lumens<=1) then self.lumens=1 end	
+			if(self.lumens>100) then self.lumens=100 end
 		end,
 		brighter=function(self)
 			self.lumens=self.lumens-1	
@@ -81,35 +61,125 @@ function createLamp(x, y, lumens, sx, sy)
 	}
 	
 	end
-	
---this will be the overlamp system.
+
 return {
 		lamps={},
-		lightMap={},
-		create=function(self, ambience, shadowColor, width, height)
-
+		lookups={},
+		init=function(self, worldLit, shadowColor, width, height, scale)
+			if shadowColor==nil then shadowColor={0, 0, 0} end 
+			if worldLit==nil then worldLit=1.0 end
+			if scale==nil then scale=1 end
+			self.scale=scale
+			self.lit=worldLit
+			self.shadowColor=shadowColor
+			self.screen={width=width/scale, height=height/scale}
+			self.shadowCanvas=love.graphics.newCanvas(width/scale, height/scale)
+			--clear out any pre-existing lamps.
+			for i=#self.lamps, -1 do
+				self.lamps[i]=nil
+			end
+			self.lamps={}
 		end,
 		createLamp=function(self, x, y, lumens)
-
+			local id=#self.lamps+1
+			self.lamps[id]=createLamp(x, y, lumens)
+			return id
+		end,
+		moveLamp=function(self, lamp, x, y, relative) --relative is whether or not it moves relative to the last pos			
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				if relative then
+					x=self.lamps[lamp].x+x
+					y=self.lamps[lamp].y+y
+				end
+					self.lamps[lamp].x=x
+					self.lamps[lamp].y=y
+			else
+				error("Lamp #" .. lamp .. " does not exist")
+			end			
+		end,
+		getLocation=function(self, lamp)
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				return self.lamps[lamp].x, self.lamps[lamp].y
+			else
+				error("Lamp #" .. lamp .. " does not exist")
+			end
 		end,
 		setBrightness=function(self, lamp, amount)
 			--if a lamp isn't specified, apply to all.
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				self.lamps[lamp]:setBrightness(amount)
+			else
+				for i, v in ipairs(self.lamps) do
+					self.lamps[i]:setBrightness(amount)
+				end
+			end
 		end,
-		setAmbience=function(self, ambience)
-		
+		getBrightness=function(self, lamp)
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				return self.lamps[lamp]:getBrightness()
+			else
+				error("Lamp #" .. lamp .. " does not exist")
+			end
+		end,
+		brighter=function(self, lamp)
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				self.lamps[lamp]:brighter()
+			else
+				for i, v in ipairs(self.lamps) do
+					self.lamps[i]:brighter()
+				end
+			end
+		end,
+		dimmer=function(self, lamp)
+			if lamp~=nil and self.lamps[lamp]~=nil then
+				self.lamps[lamp]:dimmer()
+			else
+				for i, v in ipairs(self.lamps) do
+					self.lamps[i]:dimmer()
+				end
+			end
+		end,
+		setGlobalLighting=function(self, worldLit)
+			self.lit=worldLit
 		end,
 		setShadowColor=function(self, shadowColor)
-
+			self.shadowColor=shadowColor
 		end,
 		update=function(self, dt)
-
+			--[[
+			--ability for flickering lights will be added, and needed to be updated here.
+			--]]
+			love.graphics.setCanvas(self.shadowCanvas)
+			love.graphics.clear()
+			love.graphics.push()
+			love.graphics.scale(1/3, 1/3)
+			for x=0, self.screen.width/4 do
+				for y=0, self.screen.height/4 do
+					love.graphics.setColor(0, 0, 0, 1)
+					local lit=self:lumonisity(x*4, y*4)
+					love.graphics.setColor(self.shadowColor[1], self.shadowColor[2], self.shadowColor[3], 1-(lit))
+					love.graphics.rectangle("fill",  (x*4), (y*4), 4, 4)
+				end
+			end
+			love.graphics.pop()
+			love.graphics.setCanvas()
 		end,
 		draw=function(self, lamp)
-
+			love.graphics.draw(self.shadowCanvas)
 		end,
 		--get how well lit something at x/y should be.
+		--compare luminosity of all lamps, highest is returned.
 		lumonisity=function(self, x, y)
-
+			local lumen=0
+			for i,v in ipairs(self.lamps) do
+				local l=0
+				if v:getBrightness()>0 then l=v:lumonisity(x, y) end
+				if l>lumen then lumen=l end			
+			end
+			lumen=lumen+(self.lit*100)
+			if lumen>100 then lumen=100 end
+			if lumen<0 then lumen=0 end
+			return lumen/100
 		end,
 }
 
