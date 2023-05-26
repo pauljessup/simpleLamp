@@ -152,7 +152,7 @@ function map:draw()
 		end
 	end
 
-	--this draws an overlay a shadow cast overlay, using the vectory tile raycasting.
+	--this draws an overlay a shadow cast overlay, using the vector tile raycasting.
 	lamp:draw()
 
 
