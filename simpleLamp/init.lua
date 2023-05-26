@@ -25,6 +25,17 @@ THE SOFTWARE.
 ]]--
 
 
+--[[
+ADD THE ABILITY TO DO MULTIPLE LAMPS EASIER/QUICKER.
+return an overlamp object, return id.
+the overlamp will have the lightmap, not the invididual lights.
+As well as daylight level, and amibient color
+
+how the overlamp will work-
+list of lamps. For each object/tile/etc queried, it will grab the higher of the two values.
+]]
+
+
 local dir=...
 vector=require(dir .. ".vector-light")
 
