@@ -41,43 +41,78 @@ vector=require(dir .. ".vector-light")
 
 function createLamp(x, y, lumens, sx, sy)
 
-return
-{
-	x=x,
-	y=y,
-	lumens=(100-lumens),
-    screen={x=sx, y=sy},
-	lumonisity=function(self, x, y)
-		if(self.lumens==1) then return 100 end
-		local dist=((vector.dist(x, y, self.x, self.y))-(180-self.lumens))	
-		lumens=math.ceil(((dist/((self.lumens/100)*765))*100)*-1)
-		if(lumens<1) then lumens=0 end
-		if(lumens>99) then lumens=100 end
-		return lumens
-	end,
-    --add the ability to set a default lighting level, for daylight/etc.
-    draw=function(self)
-		for x=0, self.screen.x/4 do
-            for y=0, self.screen.y/4 do
-				love.graphics.setColor(0, 0, 0, 1)
-                local lit=self:lumonisity(x*4, y*4)
-                love.graphics.setColor(0, 0, 0, 1-(lit/100))
-                love.graphics.rectangle("fill",  (x*4), (y*4), 4, 4)
-            end
-        end
-		love.graphics.setColor(1, 1, 1, 1)
-    end,
-	brighter=function(self)
-		self.lumens=self.lumens-1	
-		if(self.lumens<=1) then self.lumens=1 end	
-	end,
-	dimmer=function(self)
-		self.lumens=self.lumens+1
-		if(self.lumens>100) then self.lumens=100 end
-	end,
-	getBrightness=function(self)
-		return 100-self.lumens
+	return
+	{
+		x=x,
+		y=y,
+		lumens=(100-lumens),
+		screen={x=sx, y=sy},
+		lumonisity=function(self, x, y)
+			if(self.lumens==1) then return 100 end
+			local dist=((vector.dist(x, y, self.x, self.y))-(180-self.lumens))	
+			lumens=math.ceil(((dist/((self.lumens/100)*765))*100)*-1)
+			if(lumens<1) then lumens=0 end
+			if(lumens>99) then lumens=100 end
+			return lumens
+		end,
+		--add the ability to set a default lighting level, for daylight/etc.
+		draw=function(self)
+			for x=0, self.screen.x/4 do
+				for y=0, self.screen.y/4 do
+					love.graphics.setColor(0, 0, 0, 1)
+					local lit=self:lumonisity(x*4, y*4)
+					love.graphics.setColor(0, 0, 0, 1-(lit/100))
+					love.graphics.rectangle("fill",  (x*4), (y*4), 4, 4)
+				end
+			end
+			love.graphics.setColor(1, 1, 1, 1)
+		end,
+		brighter=function(self)
+			self.lumens=self.lumens-1	
+			if(self.lumens<=1) then self.lumens=1 end	
+		end,
+		dimmer=function(self)
+			self.lumens=self.lumens+1
+			if(self.lumens>100) then self.lumens=100 end
+		end,
+		getBrightness=function(self)
+			return 100-self.lumens
+		end
+	}
+	
 	end
+	
+--this will be the overlamp system.
+return {
+		lamps={},
+		lightMap={},
+		create=function(self, ambience, shadowColor, width, height)
+
+		end,
+		createLamp=function(self, x, y, lumens)
+
+		end,
+		setBrightness=function(self, lamp, amount)
+			--if a lamp isn't specified, apply to all.
+		end,
+		setAmbience=function(self, ambience)
+		
+		end,
+		setShadowColor=function(self, shadowColor)
+
+		end,
+		update=function(self, dt)
+
+		end,
+		draw=function(self, lamp)
+
+		end,
+		--get how well lit something at x/y should be.
+		lumonisity=function(self, x, y)
+
+		end,
 }
 
-end
+
+
+
